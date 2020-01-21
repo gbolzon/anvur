@@ -194,7 +194,7 @@ for iline, line in enumerate(LINES):
     for ip, p in enumerate(PAPERS):
         authors_string=''
         for a in p.authors: authors_string+=a.surname + "\t"
-        outline= "%s\t%s\t%s\t \t%s\n"  %(p.IF , p.title , p.review, authors_string)
+        outline= "%s\t%d\t%s\t%s\t \t%s\n"  %(p.IF , YEAR, p.title , p.review, authors_string)
         OUT_LINES.append(outline )
     fid=open("2019.txt",'wt')
     fid.writelines(OUT_LINES)
