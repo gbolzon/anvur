@@ -64,7 +64,7 @@ class person():
             s=name[0] + "."
             L=L + s 
         self.firstname = L
-        self.name = self.surname + " " + self.firstname
+        self.name = self.surname + ", " + self.firstname
     def __eq__(self, person2):
         if (self.surname==person2.surname) & (self.firstname==person2.firstname):
             return True
@@ -127,6 +127,7 @@ year_regex  = "\(%d\)" %YEAR
 PAPERS=[]
 for iline, line in enumerate(LINES):
     line = line.replace("\t","")
+    if line == "": continue
     
     ind_year=line.find(year_string)
     if ind_year==-1:
@@ -137,12 +138,12 @@ for iline, line in enumerate(LINES):
     #continue
     del title
     del review_doi_IF
-    AUTHORS=[]
+    CANDIDATE_AUTHORS=[]
     for p in OGS_LIST:
         if line.find(p.surname) > -1:
-            AUTHORS.append(p)
-    if len(AUTHORS)==0:
-        print iline, " no AUTHORS"
+            CANDIDATE_AUTHORS.append(p)
+    if len(CANDIDATE_AUTHORS)==0: print iline, " no AUTHORS"
+
     if line[:80].find(".") > -1:
         names_with_dot=True
         first_name_regex="[A-Z][\.][\,\;\ ]"
@@ -164,6 +165,7 @@ for iline, line in enumerate(LINES):
     all_but_authors=line[pos_end_of_authors:]
     #pos_end_of_authors= line.find(all_but_authors)
     authors_string=line[:pos_end_of_authors]
+    AUTHORS = [p for p in CANDIDATE_AUTHORS if (authors_string.find(p.name)>-1) ]
 
     try:
         title, review_doi_IF=re.split(year_regex,all_but_authors)
@@ -187,6 +189,9 @@ for iline, line in enumerate(LINES):
         print "NO IMPACT FACTOR in line  " , iline
         review_doi = review_doi_IF
 
+    if title=="":
+        print "Please correct doc file in  line ", iline + 1
+        sys.exit()
     A=paper(AUTHORS,title,IF, review_doi)
     PAPERS.append(A)
 
