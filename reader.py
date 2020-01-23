@@ -226,7 +226,7 @@ for iline, line in enumerate(LINES):
 book = Workbook()
 sheet = book.active
 
-# SECTIONS A B C D=year E=IF F=Title G=Review
+# SECTIONS A B C D=year E=IF F=Title G=Review I=auth1
 for ip, p in enumerate(PAPERS):
     strS1    = "A%d" %(ip+2)
     strS2    = "B%d" %(ip+2)
@@ -246,6 +246,11 @@ for ip, p in enumerate(PAPERS):
         sheet[strS1] = SECTIONS[0]
         if len(SECTIONS)>=2: sheet[strS2] = SECTIONS[1]
         if len(SECTIONS)==3: sheet[strS3] = SECTIONS[2]
+
+        for ia, a in enumerate(p.authors):
+            str_author="%s%d" %(chr(ia+73),ip+2)
+            sheet[str_author] = a.surname
+
 
 book.save("sample.xlsx")
 
