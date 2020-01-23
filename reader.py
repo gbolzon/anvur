@@ -57,13 +57,13 @@ class person():
                 L = L + s + " " 
             self.surname = deblank(L)
         else:
-            self.surname=surname.lower().capitalize()
+            self.surname=deblank(surname.lower().capitalize())
         names = firstname.rsplit(" ")
         L=""
         for name in names:
             s=name[0] + "."
             L=L + s 
-        self.firstname = L
+        self.firstname = deblank(L)
         self.name = self.surname + ", " + self.firstname
     def __eq__(self, person2):
         if (self.surname==person2.surname) & (self.firstname==person2.firstname):
@@ -81,6 +81,7 @@ def find_in_titles(TITLES,YEAR):
 # rm blanks, extra \n, moving 'in press', mv Pub 2017 in 2018, replace(.. -> .;) 
 pub_doc_file="/Users/gbolzon/Documents/OGS/ANVUR/ELABORATI/PUBBLICAZIONI 2015-2019-1.docx"
 Pers_xlsfile="/Users/gbolzon/Documents/OGS/ANVUR/ELABORATI/PersOGS I_III_2015_2019.xlsx"
+Sez_xlsfile ="/Users/gbolzon/Documents/OGS/ANVUR/ELABORATI/personale I-III 01.11.2019_mp.xlsx"
 
 wb = load_workbook(filename=Pers_xlsfile, read_only=False,data_only=True)
 
@@ -116,10 +117,21 @@ for row in range(2,200):# authors at 12/31
         p = person(firstname, surname)
         if not p in OGS_LIST: OGS_LIST.append(p)
         
+wb = load_workbook(filename=Sez_xlsfile, read_only=False,data_only=True)
+ws=wb['1 nov 2019']
+OGS_SEZ_LIST=[]
+if not p in OGS_LIST: OGS_LIST.append(p)
+for row in range(2,200):
+    if ws.cell(row=row, column=3).value is not None:
+        surname   = unidecode(ws.cell(row=row, column=3).value)
+        firstname = unidecode(ws.cell(row=row, column=4).value)
+        p = person(firstname, surname)
+        if not p in OGS_SEZ_LIST: OGS_SEZ_LIST.append(p)
 
 
 
-#ALL_AUTHORS=[]
+
+
 title=''
 review_doi_IF=''
 year_string = "(%d)" %YEAR
