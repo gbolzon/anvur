@@ -45,10 +45,11 @@ class paper():
         self.IF = IF
         self.review = clean_string(review)
 class person():
-    def __init__(self, firstname, surname):
-        self.capitalfirstname=firstname
-        self.capitalsurname=surname
-        names = deblank(surname).rsplit(" ")
+    def __init__(self, firstname, surname, sez):
+        self.capitalfirstname= deblank(firstname)
+        self.capitalsurname  = deblank(surname)
+        self.sez             = deblank(sez)
+        names = self.capitalsurname.rsplit(" ")
         nSurnames = len(names)
         if nSurnames>1:
             L=''
@@ -58,7 +59,8 @@ class person():
             self.surname = deblank(L)
         else:
             self.surname=deblank(surname.lower().capitalize())
-        names = firstname.rsplit(" ")
+
+        names = self.capitalfirstname.rsplit(" ")
         L=""
         for name in names:
             s=name[0] + "."
@@ -80,10 +82,9 @@ def find_in_titles(TITLES,YEAR):
     return it
 # rm blanks, extra \n, moving 'in press', mv Pub 2017 in 2018, replace(.. -> .;) 
 pub_doc_file="/Users/gbolzon/Documents/OGS/ANVUR/ELABORATI/PUBBLICAZIONI 2015-2019-1.docx"
-Pers_xlsfile="/Users/gbolzon/Documents/OGS/ANVUR/ELABORATI/PersOGS I_III_2015_2019.xlsx"
 Sez_xlsfile ="/Users/gbolzon/Documents/OGS/ANVUR/ELABORATI/personale I-III 01.11.2019_mp.xlsx"
 
-wb = load_workbook(filename=Pers_xlsfile, read_only=False,data_only=True)
+
 
 A = docx2txt.process(pub_doc_file)
 DECOD = unidecode(A)
@@ -96,36 +97,39 @@ YEAR = 2019
 iYear = find_in_titles(TITLES, YEAR)
 YEAR_PUBS = PUBS_STRING_BY_YEAR[iYear]
 LINES = [ l for l in YEAR_PUBS.rsplit("\n") if len(l)> 1]
-xls_sheet = str(YEAR)
-ws=wb[xls_sheet]
+#Pers_xlsfile="/Users/gbolzon/Documents/OGS/ANVUR/ELABORATI/PersOGS I_III_2015_2019.xlsx"
+#wb = load_workbook(filename=Pers_xlsfile, read_only=False,data_only=True)
+#xls_sheet = str(YEAR)
+#ws=wb[xls_sheet]
 
-OGS_LIST=[]
-for row in range(2,200): # authors at 01/01
-    if ws.cell(row=row, column=2).value is not None:
-        surname   = unidecode(ws.cell(row=row, column=2).value)
-        firstname = unidecode(ws.cell(row=row, column=3).value)
-        p = person(firstname, surname)
-        if p in OGS_LIST:
-            print "ERROR in xls pers file"
-            sys.exit()
-        OGS_LIST.append(p)
-
-for row in range(2,200):# authors at 12/31
-    if ws.cell(row=row, column=7).value is not None:
-        surname   = unidecode(ws.cell(row=row, column=7).value)
-        firstname = unidecode(ws.cell(row=row, column=8).value)
-        p = person(firstname, surname)
-        if not p in OGS_LIST: OGS_LIST.append(p)
-        
+# OGS_LIST=[]
+# for row in range(2,200): # authors at 01/01
+#     if ws.cell(row=row, column=2).value is not None:
+#         surname   = unidecode(ws.cell(row=row, column=2).value)
+#         firstname = unidecode(ws.cell(row=row, column=3).value)
+#         p = person(firstname, surname)
+#         if p in OGS_LIST:
+#             print "ERROR in xls pers file"
+#             sys.exit()
+#         OGS_LIST.append(p)
+#
+# for row in range(2,200):# authors at 12/31
+#     if ws.cell(row=row, column=7).value is not None:
+#         surname   = unidecode(ws.cell(row=row, column=7).value)
+#         firstname = unidecode(ws.cell(row=row, column=8).value)
+#         p = person(firstname, surname)
+#         if not p in OGS_LIST: OGS_LIST.append(p)
+#
 wb = load_workbook(filename=Sez_xlsfile, read_only=False,data_only=True)
 ws=wb['1 nov 2019']
 OGS_SEZ_LIST=[]
-if not p in OGS_LIST: OGS_LIST.append(p)
+
 for row in range(2,200):
     if ws.cell(row=row, column=3).value is not None:
         surname   = unidecode(ws.cell(row=row, column=3).value)
         firstname = unidecode(ws.cell(row=row, column=4).value)
-        p = person(firstname, surname)
+        sez       = unidecode(ws.cell(row=row, column=5).value)
+        p = person(firstname, surname, sez)
         if not p in OGS_SEZ_LIST: OGS_SEZ_LIST.append(p)
 
 
@@ -151,7 +155,7 @@ for iline, line in enumerate(LINES):
     del title
     del review_doi_IF
     CANDIDATE_AUTHORS=[]
-    for p in OGS_LIST:
+    for p in OGS_SEZ_LIST:
         if line.find(p.surname) > -1:
             CANDIDATE_AUTHORS.append(p)
     if len(CANDIDATE_AUTHORS)==0: print iline, " no AUTHORS"
@@ -178,6 +182,11 @@ for iline, line in enumerate(LINES):
     #pos_end_of_authors= line.find(all_but_authors)
     authors_string=line[:pos_end_of_authors]
     AUTHORS = [p for p in CANDIDATE_AUTHORS if (authors_string.find(p.name)>-1) ]
+    SECTIONS=set()
+    for p in AUTHORS: SECTIONS.add(p.sez)
+    SECTION_LIST=list(SECTIONS)
+    section_string=""
+    for s in SECTION_LIST:section_string+= s + "\t"
 
     try:
         title, review_doi_IF=re.split(year_regex,all_but_authors)
@@ -207,15 +216,17 @@ for iline, line in enumerate(LINES):
     A=paper(AUTHORS,title,IF, review_doi)
     PAPERS.append(A)
 
-    OUT_LINES=[]
-    for ip, p in enumerate(PAPERS):
-        authors_string=''
-        for a in p.authors: authors_string+=a.surname + "\t"
-        outline= "%s\t%d\t%s\t%s\t \t%s\n"  %(p.IF , YEAR, p.title , p.review, authors_string)
-        OUT_LINES.append(outline )
-    fid=open("2019.txt",'wt')
-    fid.writelines(OUT_LINES)
-    fid.close()
+OUT_LINES=[]
+for ip, p in enumerate(PAPERS):
+    authors_string=''
+    for a in p.authors: authors_string+=a.surname + "\t"
+
+    outline= "%s\t%d\t%s\t%s\t \t%s\n"  %(p.IF , YEAR, p.title , p.review, authors_string)
+    OUT_LINES.append(outline )
+
+fid=open("2019.txt",'wt')
+fid.writelines(OUT_LINES)
+fid.close()
     
         #sys.exit()
 
