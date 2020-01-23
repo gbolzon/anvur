@@ -1,7 +1,7 @@
 import docx2txt
 from unidecode import unidecode
 import re
-from openpyxl import load_workbook
+from openpyxl import load_workbook, Workbook
 import sys
 
 def longest(strlist):
@@ -39,11 +39,20 @@ def clean_string(str):
     return junk[:l-i]
 
 class paper():
-    def __init__(self, authors,title,IF, review):
+    def __init__(self, authors,title,IF, review, year):
         self.authors=authors
         self.title = clean_string(title)
         self.IF = IF
         self.review = clean_string(review)
+        self.year = year
+    def authorlist(self):
+        return [p.surname for p in self.authors]
+    def sectionlist(self):
+        SECTIONS=set()
+        for p in self.authors: SECTIONS.add(p.sez)
+        return list(SECTIONS)
+
+
 class person():
     def __init__(self, firstname, surname, sez):
         self.capitalfirstname= deblank(firstname)
@@ -182,11 +191,6 @@ for iline, line in enumerate(LINES):
     #pos_end_of_authors= line.find(all_but_authors)
     authors_string=line[:pos_end_of_authors]
     AUTHORS = [p for p in CANDIDATE_AUTHORS if (authors_string.find(p.name)>-1) ]
-    SECTIONS=set()
-    for p in AUTHORS: SECTIONS.add(p.sez)
-    SECTION_LIST=list(SECTIONS)
-    section_string=""
-    for s in SECTION_LIST:section_string+= s + "\t"
 
     try:
         title, review_doi_IF=re.split(year_regex,all_but_authors)
@@ -213,8 +217,38 @@ for iline, line in enumerate(LINES):
     if title=="":
         print "Please correct doc file in  line ", iline + 1
         sys.exit()
-    A=paper(AUTHORS,title,IF, review_doi)
+    A=paper(AUTHORS,title,IF, review_doi, YEAR)
     PAPERS.append(A)
+    if len(A.sectionlist()) >2 :
+        print "3 sezioni"
+
+
+book = Workbook()
+sheet = book.active
+
+# SECTIONS A B C D=year E=IF F=Title G=Review
+for ip, p in enumerate(PAPERS):
+    strS1    = "A%d" %(ip+2)
+    strS2    = "B%d" %(ip+2)
+    strS3    = "C%d" %(ip+2)
+    strIF    = "E%d" %(ip+2)
+    strYear  = "D%d" %(ip+2)
+    strTitle = "F%d" %(ip+2)
+    str_Rev  = "G%d" %(ip+2)
+    str_bla  = "H%d" %(ip+2)
+    sheet[strIF   ] = p.IF
+    sheet[strYear ] = p.year
+    sheet[strTitle] = p.title
+    sheet[str_Rev ] = p.review
+    sheet[str_bla ] = " "
+    if len(p.authors) > 0:
+        SECTIONS = p.sectionlist()
+        sheet[strS1] = SECTIONS[0]
+        if len(SECTIONS)>=2: sheet[strS2] = SECTIONS[1]
+        if len(SECTIONS)==3: sheet[strS3] = SECTIONS[2]
+
+book.save("sample.xlsx")
+
 
 OUT_LINES=[]
 for ip, p in enumerate(PAPERS):
