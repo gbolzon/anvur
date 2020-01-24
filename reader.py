@@ -76,6 +76,7 @@ class person():
             L=L + s 
         self.firstname = deblank(L)
         self.name = self.surname + ", " + self.firstname
+        self.regex = self.surname + "[\ \,][\ ]*" + self.firstname[:2]
     def __eq__(self, person2):
         if (self.surname==person2.surname) & (self.firstname==person2.firstname):
             return True
@@ -102,10 +103,7 @@ regex="Publications \d\d\d\d"
 TITLES = re.findall(regex,DECOD)
 PUBS_STRING_BY_YEAR = re.split(regex,DECOD)[1:]
 
-YEAR = 2019
-iYear = find_in_titles(TITLES, YEAR)
-YEAR_PUBS = PUBS_STRING_BY_YEAR[iYear]
-LINES = [ l for l in YEAR_PUBS.rsplit("\n") if len(l)> 1]
+
 #Pers_xlsfile="/Users/gbolzon/Documents/OGS/ANVUR/ELABORATI/PersOGS I_III_2015_2019.xlsx"
 #wb = load_workbook(filename=Pers_xlsfile, read_only=False,data_only=True)
 #xls_sheet = str(YEAR)
@@ -142,105 +140,115 @@ for row in range(2,200):
         if not p in OGS_SEZ_LIST: OGS_SEZ_LIST.append(p)
 
 
-
-
-
-title=''
-review_doi_IF=''
-year_string = "(%d)" %YEAR
-year_regex  = "\(%d\)" %YEAR
 PAPERS=[]
-for iline, line in enumerate(LINES):
-    line = line.replace("\t","")
-    if line == "": continue
-    
-    ind_year=line.find(year_string)
-    if ind_year==-1:
-        print iline, line
-        break
-    
-    #print iline, line[ind_year:ind_year+6]
-    #continue
-    del title
-    del review_doi_IF
-    CANDIDATE_AUTHORS=[]
-    for p in OGS_SEZ_LIST:
-        if line.find(p.surname) > -1:
-            CANDIDATE_AUTHORS.append(p)
-    if len(CANDIDATE_AUTHORS)==0: print iline, " no AUTHORS"
+for YEAR in range(2015, 2020):
+    iYear = find_in_titles(TITLES, YEAR)
+    YEAR_PUBS = PUBS_STRING_BY_YEAR[iYear]
+    LINES = [ l for l in YEAR_PUBS.rsplit("\n") if len(l)> 1]
 
-    if line[:80].find(".") > -1:
-        names_with_dot=True
-        first_name_regex="[A-Z][\.][\,\;\ ]"
-    else:
-        names_with_dot=False
-        first_name_regex="[A-Z][\,\ ]"
+    title=''
+    review_doi_IF=''
+    year_string = "(%d)" %YEAR
+    year_regex  = "\(%d\)" %YEAR
     
-    Impact_factor_regex="IF[\ ]*[\=\:][\ ]*[0-9]*[\.\,][0-9]*"
-    #first_name_regex="[A-Z][\.]*[\,\ ]"
-    line_before_year, line_after_year= re.split(year_regex,line)
-    strlist= re.split(first_name_regex, line_before_year)
-    authors_first_name = re.findall(first_name_regex, line_before_year)
-    authors_last_name = strlist[:-1]
-    
-    if  strlist[-1] == ' ':
-        pos_end_of_authors = len(line_before_year)
-    else:
-        pos_end_of_authors = line.find(strlist[-1])
-    all_but_authors=line[pos_end_of_authors:]
-    #pos_end_of_authors= line.find(all_but_authors)
-    authors_string=line[:pos_end_of_authors]
-    AUTHORS = [p for p in CANDIDATE_AUTHORS if (authors_string.find(p.name)>-1) ]
+    for iline, line in enumerate(LINES):
+        line = line.replace("\t","")
+        if line == "": continue
 
-    try:
-        title, review_doi_IF=re.split(year_regex,all_but_authors)
-        #print title
-    except:
+        ind_year=line.find(year_string)
+        if ind_year==-1:
+            print iline, line
+            break
+
+        #print iline, line[ind_year:ind_year+6]
+        #continue
+        del title
+        del review_doi_IF
+        CANDIDATE_AUTHORS=[]
+        for p in OGS_SEZ_LIST:
+            if line.find(p.surname) > -1:
+                CANDIDATE_AUTHORS.append(p)
+        if len(CANDIDATE_AUTHORS)==0: print iline, " no AUTHORS"
+    
+        if line[:80].find(".") > -1:
+            names_with_dot=True
+            first_name_regex="[A-Z][\.][\,\;\ ]"
+        else:
+            names_with_dot=False
+            first_name_regex="[A-Z][\,\ ]"
+
+        Impact_factor_regex="IF[\ ]*[\=\:][\ ]*[0-9]*[\.\,][0-9]*"
+        #first_name_regex="[A-Z][\.]*[\,\ ]"
+        line_before_year, line_after_year= re.split(year_regex,line)
+        strlist= re.split(first_name_regex, line_before_year)
+        authors_first_name = re.findall(first_name_regex, line_before_year)
+        authors_last_name = strlist[:-1]
+
+        if  strlist[-1] == ' ':
+            pos_end_of_authors = len(line_before_year)
+        else:
+            pos_end_of_authors = line.find(strlist[-1])
+        all_but_authors=line[pos_end_of_authors:]
+        #pos_end_of_authors= line.find(all_but_authors)
+        authors_string=line[:pos_end_of_authors]
+        #AUTHORS = [p for p in CANDIDATE_AUTHORS if (authors_string.find(p.name)>-1) ]
+        AUTHORS = [a for a in CANDIDATE_AUTHORS if len(re.findall(a.regex,authors_string)) > 0 ]
+        if len(AUTHORS)==0:
+            print line
+
         try:
-            print "secondo tentativo"
-            pos = all_but_authors[:10].find("201")
-            if pos>-1:
-                title=longest(all_but_authors[pos+4:].rsplit(","))
-                review_doi_IF=""
+            title, review_doi_IF=re.split(year_regex,all_but_authors)
+            #print title
         except:
-            print "CANNOT find year in " + all_but_authors
-    try:
-        strIF = re.findall(Impact_factor_regex, all_but_authors)[0].replace(",",".").replace(":","=")
-        pos_equal=strIF.find("=")
-        IF = float(strIF[pos_equal+1:])
-        review_doi = re.split(Impact_factor_regex, review_doi_IF)[0]
-    except:
-        IF = None
-        print "NO IMPACT FACTOR in line  " , iline
-        review_doi = review_doi_IF
+            try:
+                print "secondo tentativo"
+                pos = all_but_authors[:10].find("201")
+                if pos>-1:
+                    title=longest(all_but_authors[pos+4:].rsplit(","))
+                    review_doi_IF=""
+            except:
+                print "CANNOT find year in " + all_but_authors
+        try:
+            strIF = re.findall(Impact_factor_regex, all_but_authors)[0].replace(",",".").replace(":","=")
+            pos_equal=strIF.find("=")
+            IF = float(strIF[pos_equal+1:])
+            review_doi = re.split(Impact_factor_regex, review_doi_IF)[0]
+        except:
+            IF = None
+            print "NO IMPACT FACTOR in line  " , iline
+            review_doi = review_doi_IF
 
-    if title=="":
-        print "Please correct doc file in  line ", iline + 1
-        sys.exit()
-    A=paper(AUTHORS,title,IF, review_doi, YEAR)
-    PAPERS.append(A)
-    if len(A.sectionlist()) >2 :
-        print "3 sezioni"
+        if title=="":
+            print "Please correct doc file in  line ", iline + 1
+            sys.exit()
+        A=paper(AUTHORS,title,IF, review_doi, YEAR)
+        PAPERS.append(A)
+        if len(A.sectionlist()) >3 :
+            print "4 sezioni"
+            sys.exit()
 
 
 book = Workbook()
 sheet = book.active
 
-# SECTIONS A B C D=year E=IF F=Title G=Review I=auth1
+# SECTIONS E F G H=year I=IF J=Title K=Review M=auth1
 for ip, p in enumerate(PAPERS):
-    strS1    = "A%d" %(ip+2)
-    strS2    = "B%d" %(ip+2)
-    strS3    = "C%d" %(ip+2)
-    strIF    = "E%d" %(ip+2)
-    strYear  = "D%d" %(ip+2)
-    strTitle = "F%d" %(ip+2)
-    str_Rev  = "G%d" %(ip+2)
-    str_bla  = "H%d" %(ip+2)
+    xls_row=ip+8
+    strS1    = "E%d" %(xls_row)
+    strS2    = "F%d" %(xls_row)
+    strS3    = "G%d" %(xls_row)
+    strIF    = "I%d" %(xls_row)
+    strYear  = "H%d" %(xls_row)
+    strTitle = "J%d" %(xls_row)
+    str_Rev  = "K%d" %(xls_row)
+    str_bla  = "L%d" %(xls_row)
     sheet[strIF   ] = p.IF
     sheet[strYear ] = p.year
     sheet[strTitle] = p.title
     sheet[str_Rev ] = p.review
     sheet[str_bla ] = " "
+    #if p.title.startswith("Simulating the Effects of Alternative Managemen"):
+    #    print "TROVATO a riga", xls_row
     if len(p.authors) > 0:
         SECTIONS = p.sectionlist()
         sheet[strS1] = SECTIONS[0]
@@ -248,12 +256,13 @@ for ip, p in enumerate(PAPERS):
         if len(SECTIONS)==3: sheet[strS3] = SECTIONS[2]
 
         for ia, a in enumerate(p.authors):
-            str_author="%s%d" %(chr(ia+73),ip+2)
+            str_author="%s%d" %(chr(ia+77),xls_row)
             sheet[str_author] = a.surname
 
 
 book.save("sample.xlsx")
 
+sys.exit()
 
 OUT_LINES=[]
 for ip, p in enumerate(PAPERS):
@@ -266,6 +275,4 @@ for ip, p in enumerate(PAPERS):
 fid=open("2019.txt",'wt')
 fid.writelines(OUT_LINES)
 fid.close()
-    
-        #sys.exit()
 
