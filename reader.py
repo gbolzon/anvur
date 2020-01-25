@@ -239,8 +239,11 @@ for YEAR in range(2015, 2020):
             sys.exit()
 
 
-book = Workbook()
-sheet = book.active
+#book = Workbook()
+#sheet = book.active
+book = load_workbook(filename="Anvur_pub.xlsx", read_only=False,data_only=False)
+sheet=book['Sheet']
+
 
 # SECTIONS E F G H=year I=IF J=Title K=Review M=auth1
 for ip, p in enumerate(PAPERS):
