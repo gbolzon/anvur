@@ -58,14 +58,16 @@ class person():
         self.capitalfirstname= deblank(firstname)
         self.capitalsurname  = deblank(surname)
         self.sez             = deblank(sez)
-        names = self.capitalsurname.rsplit(" ")
-        nSurnames = len(names)
+        surnames = re.split("[\ \-]",self.capitalsurname)
+        nSurnames = len(surnames)
         if nSurnames>1:
-            L=''
-            for name in names:
-                s = name.lower().capitalize()
-                L = L + s + " " 
-            self.surname = deblank(L)
+            L=surnames[0].lower().capitalize()
+            r = re.search("[\ \-]",self.capitalsurname)
+            sep = r.group()
+            for surname in surnames[1:]:
+                s = surname.lower().capitalize()
+                L = L + sep + s
+            self.surname = L
         else:
             self.surname=deblank(surname.lower().capitalize())
 
@@ -153,11 +155,15 @@ for YEAR in range(2015, 2020):
     
     for iline, line in enumerate(LINES):
         line = line.replace("\t","")
+        line = line.replace("Monti-Birkenmeier","Monti")
+        line = line.replace("Plasencia Linares", "Plasencia")
+        line = line.replace("Melaku","")
+        line = line.replace(" ,",",")
         if line == "": continue
 
         ind_year=line.find(year_string)
         if ind_year==-1:
-            print iline, line
+            #print iline, line
             break
 
         #print iline, line[ind_year:ind_year+6]
@@ -168,7 +174,7 @@ for YEAR in range(2015, 2020):
         for p in OGS_SEZ_LIST:
             if line.find(p.surname) > -1:
                 CANDIDATE_AUTHORS.append(p)
-        if len(CANDIDATE_AUTHORS)==0: print iline, " no AUTHORS"
+        #if len(CANDIDATE_AUTHORS)==0: print iline, " no AUTHORS"
     
         if line[:80].find(".") > -1:
             names_with_dot=True
@@ -191,10 +197,15 @@ for YEAR in range(2015, 2020):
         all_but_authors=line[pos_end_of_authors:]
         #pos_end_of_authors= line.find(all_but_authors)
         authors_string=line[:pos_end_of_authors]
-        #AUTHORS = [p for p in CANDIDATE_AUTHORS if (authors_string.find(p.name)>-1) ]
-        AUTHORS = [a for a in CANDIDATE_AUTHORS if len(re.findall(a.regex,authors_string)) > 0 ]
-        if len(AUTHORS)==0:
-            print line
+        AUTHORS=[]
+        for a in CANDIDATE_AUTHORS:
+            if len(re.findall(a.regex,authors_string)) > 0:
+                AUTHORS.append(a)
+            else:
+                print "rejecting " + a.name
+                #print line
+        #AUTHORS = [a for a in CANDIDATE_AUTHORS if len(re.findall(a.regex,authors_string)) > 0 ]
+        #if len(AUTHORS)==0: print line
 
         try:
             title, review_doi_IF=re.split(year_regex,all_but_authors)
@@ -215,7 +226,7 @@ for YEAR in range(2015, 2020):
             review_doi = re.split(Impact_factor_regex, review_doi_IF)[0]
         except:
             IF = None
-            print "NO IMPACT FACTOR in line  " , iline
+            #print "NO IMPACT FACTOR in line  " , iline
             review_doi = review_doi_IF
 
         if title=="":
