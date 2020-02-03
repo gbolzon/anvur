@@ -39,12 +39,13 @@ def clean_string(str):
     return junk[:l-i]
 
 class paper():
-    def __init__(self, authors,title,IF, review, year):
+    def __init__(self, authors,title,IF, review, year, completeline):
         self.authors=authors
         self.title = clean_string(title)
         self.IF = IF
         self.review = clean_string(review)
         self.year = year
+        self.line = completeline
     def authorlist(self):
         return [p.surname for p in self.authors]
     def sectionlist(self):
@@ -233,7 +234,7 @@ for YEAR in range(2015, 2020):
         if title=="":
             print "Please correct doc file in  line ", iline + 1
             sys.exit()
-        A=paper(AUTHORS,title,IF, review_doi, YEAR)
+        A=paper(AUTHORS,title,IF, review_doi, YEAR,line)
         for p in PAPERS:
             if p.title == A.title:
                 print "double in " + title
@@ -252,7 +253,7 @@ sheet=book['Sheet']
 
 # SECTIONS E F G H=year I=IF J=Title K=Review M=auth1
 for ip, p in enumerate(PAPERS):
-    xls_row=ip+8
+    xls_row=ip+11
     strS1    = "E%d" %(xls_row)
     strS2    = "F%d" %(xls_row)
     strS3    = "G%d" %(xls_row)
@@ -260,11 +261,13 @@ for ip, p in enumerate(PAPERS):
     strYear  = "H%d" %(xls_row)
     strTitle = "J%d" %(xls_row)
     str_Rev  = "K%d" %(xls_row)
-    str_bla  = "L%d" %(xls_row)
+    str_Line = "L%d" %(xls_row)
+    str_bla  = "M%d" %(xls_row)
     sheet[strIF   ] = p.IF
     sheet[strYear ] = p.year
     sheet[strTitle] = p.title
     sheet[str_Rev ] = p.review
+    sheet[str_Line] = p.line
     sheet[str_bla ] = " "
     #if p.title.startswith("Simulating the Effects of Alternative Managemen"):
     #    print "TROVATO a riga", xls_row
@@ -275,7 +278,7 @@ for ip, p in enumerate(PAPERS):
         if len(SECTIONS)==3: sheet[strS3] = SECTIONS[2]
 
         for ia, a in enumerate(p.authors):
-            str_author="%s%d" %(chr(ia+77),xls_row)
+            str_author="%s%d" %(chr(ia+78),xls_row)
             sheet[str_author] = a.surname
 
 
