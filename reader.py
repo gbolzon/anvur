@@ -202,7 +202,8 @@ for YEAR in range(2015, 2020):
             if len(re.findall(a.regex,authors_string)) > 0:
                 AUTHORS.append(a)
             else:
-                print "rejecting " + a.name
+                pass
+                #print "rejecting " + a.name
                 #print line
         #AUTHORS = [a for a in CANDIDATE_AUTHORS if len(re.findall(a.regex,authors_string)) > 0 ]
         #if len(AUTHORS)==0: print line
@@ -233,6 +234,10 @@ for YEAR in range(2015, 2020):
             print "Please correct doc file in  line ", iline + 1
             sys.exit()
         A=paper(AUTHORS,title,IF, review_doi, YEAR)
+        for p in PAPERS:
+            if p.title == A.title:
+                print "double in " + title
+                sys.exit()
         PAPERS.append(A)
         if len(A.sectionlist()) >3 :
             print "4 sezioni"
