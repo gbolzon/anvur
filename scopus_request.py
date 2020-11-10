@@ -8,9 +8,16 @@ class scopus_paper():
         self.scopus_title=title
         self.scopus_citations=scopus_cit
         self.journal=journal
-        
+    def __repr__(self):
+        toprint=(self.scopus_id,self.scopus_citations,self.journal, self.scopus_title)
+        l ="SCOPUS_ID : %s\n"
+        l+="CITATIONS : %s\n"
+        l+="JOURNAL   : %s\n"
+        l+="TITLE     : %s\n"
+        return l % toprint
 
 def trunk_string(inputstring,n):
+    inputstring=inputstring.replace('?','')
     words = inputstring.rsplit(" ")
     L=""
     for word in words:
@@ -21,7 +28,10 @@ def trunk_string(inputstring,n):
     
 
 def search_by_title(title):
-    encoded_title=urllib.quote(title)#title.replace(" ","%20")
+    '''
+    returns a list of Scopus_Paper Objects
+    '''
+    encoded_title=urllib.quote(title)
     
     os.system("./request_by_title.sh " + encoded_title)
     
@@ -42,26 +52,48 @@ def search_by_title(title):
     return PAPERLIST
 
 
-title="Imaging of the Dinaric-Alpine chain convergence zone"
-#print citations(title)
 
-book = load_workbook(filename="sample.xlsx", read_only=False,data_only=False)
-sheet=book['Sheet']
+book = load_workbook(filename="Anvur_2020_21_OGS.xlsx", read_only=False,data_only=False)
+sheet=book['Foglio1']
 
-avoid_list=["CO2","("]
+avoid_list=["(","?"]
 
-for ip in range(15,30):
-    xls_row= ip + 11
-    strTitle = "J%d" %(xls_row)
-    title=sheet[strTitle].value
+for ip in range(867):
+    xls_row= ip + 12
+    strTitle = "O%d" %(xls_row)
+    str_id   = "P%d" %(xls_row)
+    str_cit  = "Q%d" %(xls_row)
+    str_rew  = "R%d" %(xls_row)
+    str_undef= "S%d" %(xls_row)
+
+
+    scopus_id = int(sheet[str_id].value)
+    if scopus_id != 0 : continue  # scopus_id = 0 means still not calculated
+
+    title=sheet[strTitle].value.replace('CO2','').replace("?","").replace("(","").replace(")","")
     ntrunk=150
+
     for bad_string in avoid_list:
         n_bad= title.find(bad_string)
         if (n_bad > -1 ) & ( n_bad < ntrunk):
             ntrunk = n_bad
 
+    success=False
     try:
-        P = search_by_title(trunk_string(title,ntrunk))
+        Paperlist = search_by_title(trunk_string(title,ntrunk))
+        success = True
+
     except:
         print "NOT FOUND " + title
-    print P[0].scopus_citations, title
+
+    if success :
+        print title
+        if len(Paperlist) > 1:
+            sheet[str_undef] = 'undefined'
+            print "More than one title found"
+        p=Paperlist[0]
+        sheet[str_id]  = p.scopus_id
+        sheet[str_cit] = p.scopus_citations
+        sheet[str_rew] = p.journal
+
+book.save("sample2.xlsx")
